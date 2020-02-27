@@ -1,0 +1,34 @@
+{
+  "name": "@mathquis/node-kaldi-online-nnet3-decoder",
+  "version": "1.0.0",
+  "description": "ASR online decoding using Kaldi NNet3 GrammarFST",
+  "main": "lib/index.js",
+  "scripts": {
+    "configure": "node-gyp configure",
+    "build": "npm run configure && node-gyp build && npm test",
+    "rebuild": "npm run configure && node-gyp rebuild && npm test",
+    "test": "node test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mathquis/node-kaldi-online-nnet3-decoder.git"
+  },
+  "keywords": [
+    "asr",
+    "kaldi",
+    "nnet3",
+    "grammar",
+    "online",
+    "node"
+  ],
+  "author": "Mathieu \"Fastjack\" Quisefit",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mathquis/node-kaldi-online-nnet3-decoder/issues"
+  },
+  "devDependencies": {
+    "node-addon-api": "^2.0.0"
+  },
+  "dependencies": {},
+  "homepage": "https://github.com/mathquis/node-kaldi-online-nnet3-decoder#readme"
+}
