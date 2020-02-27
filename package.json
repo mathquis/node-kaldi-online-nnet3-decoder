@@ -3,11 +3,22 @@
   "version": "1.0.0",
   "description": "ASR online decoding using Kaldi NNet3 GrammarFST",
   "main": "lib/index.js",
+  "gypfile": true,
+  "binary": {
+    "module_name": "kaldi",
+    "module_path": "./lib/binding/{configuration}/{node_abi}-{platform}-{arch}/",
+    "package_name": "{module_name}-v{version}-{node_abi}-{platform}-{arch}.tar.gz",
+    "host": "https://github.com/mathquis/node-kaldi-online-nnet3-decoder/releases/download/",
+    "remote_path": "{version}"
+  },
   "scripts": {
+    "preinstall": "npm install node-pre-gyp",
+    "install": "node-pre-gyp install --fallback-to-build",
     "configure": "node-gyp configure",
     "build": "npm run configure && node-gyp build && npm test",
     "rebuild": "npm run configure && node-gyp rebuild && npm test",
-    "test": "node test.js"
+    "test": "node test.js",
+    "publish": "node-pre-gyp configure && node-pre-gyp build && node-pre-gyp package && node-pre-gyp-github publish --release"
   },
   "repository": {
     "type": "git",
@@ -27,8 +38,11 @@
     "url": "https://github.com/mathquis/node-kaldi-online-nnet3-decoder/issues"
   },
   "devDependencies": {
+    "node-pre-gyp": "^0.14.0",
+    "node-pre-gyp-github": "^1.4.3"
+  },
+  "dependencies": {
     "node-addon-api": "^2.0.0"
   },
-  "dependencies": {},
   "homepage": "https://github.com/mathquis/node-kaldi-online-nnet3-decoder#readme"
 }
