@@ -17,7 +17,7 @@
     "configure": "node-gyp configure",
     "build": "npm run configure && node-gyp build && npm test",
     "rebuild": "npm run configure && node-gyp rebuild && npm test",
-    "test": "node test.js",
+    "test": "node test.js \"test.wav\"",
     "publish": "node-pre-gyp configure && node-pre-gyp build && node-pre-gyp package && node-pre-gyp-github publish --release"
   },
   "repository": {
@@ -38,11 +38,13 @@
     "url": "https://github.com/mathquis/node-kaldi-online-nnet3-decoder/issues"
   },
   "devDependencies": {
-    "node-pre-gyp": "^0.14.0",
     "node-pre-gyp-github": "^1.4.3"
   },
   "dependencies": {
-    "node-addon-api": "^2.0.0"
+    "glob": "^7.1.6",
+    "node-addon-api": "^2.0.0",
+    "node-pre-gyp": "^0.14.0",
+    "wavefile": "^11.0.0"
   },
   "homepage": "https://github.com/mathquis/node-kaldi-online-nnet3-decoder#readme"
 }
