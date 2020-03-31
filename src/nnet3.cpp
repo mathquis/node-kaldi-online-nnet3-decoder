@@ -149,13 +149,22 @@ OnlineNNet3Model::OnlineNNet3Model(const Napi::CallbackInfo& info) : Napi::Objec
 	// Create feature pipeline
 	KALDI_LOG << "Loading feature pipeline info...";
 
-	feature_info = new OnlineNnet2FeaturePipelineInfo(this->feature_config);
+	feature_info = new OnlineNnet2FeaturePipelineInfo(feature_config);
 
 	KALDI_LOG << "Model loaded";
 }
 
 OnlineNNet3Model::~OnlineNNet3Model() {
-		delete feature_info;
+	delete feature_info;
+	feature_info = NULL;
+	// delete feature_config;
+	// feature_config = NULL;
+	// delete decode_fst;
+	// decode_fst = NULL;
+	delete word_syms;
+	word_syms = NULL;
+	// delete am_nnet;
+	// am_nnet = NULL;
 }
 
 /* ============================================
@@ -260,6 +269,7 @@ OnlineNNet3GrammarDecoder::OnlineNNet3GrammarDecoder(const Napi::CallbackInfo& i
 	// // Create MBR
 	KALDI_LOG << "Loading MBR...";
 	MinimumBayesRiskOptions mbr_opts;
+	mbr_opts.decode_mbr = true;
 
 	KALDI_LOG << "alloc: OnlineIvectorExtractorAdaptationState";
 
@@ -336,9 +346,9 @@ Napi::Value OnlineNNet3GrammarDecoder::PushChunk(const Napi::CallbackInfo& info)
 		StartDecoding();
 	}
 
-	const BaseFloat sample_rate = info[0].As<Napi::Number>().FloatValue();
-	const int32 num_frames = info[1].As<Napi::Number>().Uint32Value();
-	const Napi::Float32Array frames = info[2].As<Napi::Float32Array>();
+	const BaseFloat sample_rate		= info[0].As<Napi::Number>().FloatValue();
+	const int32 num_frames			= info[1].As<Napi::Number>().Uint32Value();
+	const Napi::Float32Array frames	= info[2].As<Napi::Float32Array>();
 
 	Vector<BaseFloat> wave_part;
 
@@ -415,66 +425,99 @@ Napi::Value OnlineNNet3GrammarDecoder::GetResult(const Napi::CallbackInfo& info)
 
 		KALDI_LOG << "Getting lattice";
 
-		CompactLattice lat;
-		decoder_->GetLattice(true, &lat);
+		CompactLattice clat;
+		decoder_->GetLattice(true, &clat);
 
-		// WriteCompactLattice(std::cout, false, lat);
+		if (clat.NumStates() > 0) {
 
-		// Text
-		text = LatticeToString(lat, *aModel->word_syms);
+			// Resolve lattices
+			CompactLattice best_path_clat;
+			CompactLatticeShortestPath(clat, &best_path_clat);
 
-		// // Confidences
-		MinimumBayesRisk *mbr = NULL;
-		mbr = new MinimumBayesRisk(lat, mbr_opts);
+			Lattice best_path_lat;
+			ConvertLattice(best_path_clat, &best_path_lat);
 
-		const std::vector<BaseFloat> &conf                         = mbr->GetOneBestConfidences();
-		const std::vector<int32> &words                            = mbr->GetOneBest();
-		const std::vector<std::pair<BaseFloat, BaseFloat> > &times = mbr->GetOneBestTimes();
+			LatticeWeight weight;
+			std::vector<int32> alignment;
+			std::vector<int32> wordIds;
+			GetLinearSymbolSequence(best_path_lat, &alignment, &wordIds, &weight);
 
-		KALDI_LOG << "Got words " << words.size();
-		KALDI_LOG << "Got conf " << conf.size();
+			// Text and words
+			std::ostringstream msg;
+			for (size_t i = 0; i < wordIds.size(); i++) {
+				std::string s = aModel->word_syms->Find(wordIds[i]);
+				if (s.empty()) {
+					KALDI_WARN << "Word-id " << wordIds[i] << " not in symbol table.";
+				} else
+					KALDI_LOG << "LAT Word: " << s;
+					msg << s << ( i == wordIds.size() - 1 ? "" : " " );
+				}
 
-		KALDI_ASSERT(conf.size() == words.size() && words.size() == times.size());
+			KALDI_LOG << "Got wordIds " << wordIds.size();
 
-		KALDI_LOG << "Text: " << text;
+			text = msg.str();
 
-		// Time
-		t = clock() - t;
-		seconds_taken = RoundFloat(((double)t)/CLOCKS_PER_SEC, 3);
+			// MBR
+			MinimumBayesRisk *mbr = NULL;
+			mbr = new MinimumBayesRisk(clat, wordIds, mbr_opts);
 
-		// Words and confidences
-		double totalConfidence = 0;
-		int position = 0;
+			const std::vector<BaseFloat> &conf                         = mbr->GetOneBestConfidences();
+			const std::vector<int32> &words                            = mbr->GetOneBest();
+			const std::vector<std::pair<BaseFloat, BaseFloat> > &times = mbr->GetOneBestTimes();
 
-		for (size_t i = 0; i < words.size(); i++) {
-			// Get the word symbol (# -> word)
-			const std::string &word = aModel->word_syms->Find(words[i]);
+			for (size_t i = 0; i < words.size(); i++) {
+				std::string s = aModel->word_syms->Find(wordIds[i]);
+				if (s.empty()) {
+					KALDI_WARN << "Word-id " << words[i] << " not in symbol table.";
+				} else
+					KALDI_LOG << "MBR Word: " << s;
+				}
 
-			totalConfidence += conf[i];
+			KALDI_LOG << "Got words " << words.size();
+			KALDI_LOG << "Got conf " << conf.size();
 
-			Napi::Object item = Napi::Object::New(env);
-			item.Set("value", word);
-			item.Set("confidence", RoundFloat(conf[i], 5));
+			KALDI_ASSERT(conf.size() == words.size() && words.size() == times.size());
 
-			// Word time
-			Napi::Array t = Napi::Array::New(env);
+			KALDI_LOG << "Text: " << text;
 
-			const int idx = 0;
-			t[idx] = RoundFloat(times[i].first * seconds_per_frame, 2);
-			t[1] = RoundFloat(times[i].second * seconds_per_frame, 2);
+			// Time
+			t = clock() - t;
+			seconds_taken = RoundFloat(((double)t)/CLOCKS_PER_SEC, 3);
 
-			item.Set("time", t);
+			// Words and confidences
+			double totalConfidence = 0;
+			int position = 0;
 
-			item.Set("rangeStart", position);
-			item.Set("rangeEnd", position + word.size());
+			for (size_t i = 0; i < words.size(); i++) {
+				// Get the word symbol (# -> word)
+				const std::string &word = aModel->word_syms->Find(words[i]);
 
-			position += word.size() + ( i == words.size() - 1 ? 0 : 1 ); // Add space
+				totalConfidence += conf[i];
 
-			// Add word to array
-			word_confidences[i] = item;
+				Napi::Object item = Napi::Object::New(env);
+				item.Set("value", word);
+				item.Set("confidence", RoundFloat(conf[i], 5));
+
+				// Word time
+				Napi::Array t = Napi::Array::New(env);
+
+				const int idx = 0;
+				t[idx] = RoundFloat(times[i].first * seconds_per_frame, 2);
+				t[1] = RoundFloat(times[i].second * seconds_per_frame, 2);
+
+				item.Set("time", t);
+
+				item.Set("rangeStart", position);
+				item.Set("rangeEnd", position + word.size());
+
+				position += word.size() + ( i == words.size() - 1 ? 0 : 1 ); // Add space
+
+				// Add word to array
+				word_confidences[i] = item;
+			}
+
+			likelihood = RoundFloat(totalConfidence / words.size(), 5);
 		}
-
-		likelihood = RoundFloat(totalConfidence / words.size(), 5);
 
 		KALDI_LOG << "Decoded utterance in " << seconds_taken << "s with confidence " << likelihood;
 	}
@@ -489,41 +532,6 @@ Napi::Value OnlineNNet3GrammarDecoder::GetResult(const Napi::CallbackInfo& info)
 	response.Set("tokens", word_confidences);
 
 	return response;
-}
-
-std::string OnlineNNet3GrammarDecoder::LatticeToString(const kaldi::Lattice &lat, const fst::SymbolTable &word_syms) {
-	using namespace kaldi;
-
-	LatticeWeight weight;
-	std::vector<int32> alignment;
-	std::vector<int32> words;
-	GetLinearSymbolSequence(lat, &alignment, &words, &weight);
-
-	std::ostringstream msg;
-	for (size_t i = 0; i < words.size(); i++) {
-		std::string s = word_syms.Find(words[i]);
-		if (s.empty()) {
-			KALDI_WARN << "Word-id " << words[i] << " not in symbol table.";
-			// msg << "<#" << std::to_string(i) << "> ";
-		} else
-			msg << s << ( i == words.size() - 1 ? "" : " " );
-		}
-	return msg.str();
-}
-
-std::string OnlineNNet3GrammarDecoder::LatticeToString(const kaldi::CompactLattice &clat, const fst::SymbolTable &word_syms) {
-	using namespace kaldi;
-
-	if (clat.NumStates() == 0) {
-		KALDI_WARN << "Empty lattice.";
-		return "";
-	}
-	CompactLattice best_path_clat;
-	CompactLatticeShortestPath(clat, &best_path_clat);
-
-	Lattice best_path_lat;
-	ConvertLattice(best_path_clat, &best_path_lat);
-	return LatticeToString(best_path_lat, word_syms);
 }
 
 double OnlineNNet3GrammarDecoder::RoundFloat(double number, const int decimals) {
@@ -615,4 +623,3 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
 };
 
 NODE_API_MODULE(NODE_GYP_MODULE_NAME, Init)
-

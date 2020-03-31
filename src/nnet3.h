@@ -49,8 +49,6 @@ class OnlineNNet3GrammarDecoder : public Napi::ObjectWrap<OnlineNNet3GrammarDeco
 
         void StartDecoding(void);
         void FreeDecoder(void);
-        std::string LatticeToString(const kaldi::Lattice &lat, const fst::SymbolTable &word_syms);
-        std::string LatticeToString(const kaldi::CompactLattice &clat, const fst::SymbolTable &word_syms);
         double RoundFloat(double number, const int decimals);
 
 		OnlineNNet3Model											*aModel;
