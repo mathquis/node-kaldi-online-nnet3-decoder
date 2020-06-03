@@ -14,11 +14,12 @@
   "scripts": {
     "preinstall": "npm install node-pre-gyp",
     "install": "node-pre-gyp install --fallback-to-build",
-    "configure": "node-gyp configure",
-    "build": "npm run configure && node-gyp build && npm test",
-    "rebuild": "npm run configure && node-gyp rebuild && npm test",
+    "configure": "node-pre-gyp configure",
+    "build": "npm run configure && node-pre-gyp build && npm test",
+    "rebuild": "npm run configure && node-pre-gyp rebuild && npm test",
+    "package": "node-pre-gyp package",
     "test": "node test.js \"test.wav\"",
-    "publish": "node-pre-gyp configure && node-pre-gyp build && node-pre-gyp package && node-pre-gyp-github publish --release"
+    "publish": "npm run configure && npm run rebuild && npm run package && node-pre-gyp-github publish --release"
   },
   "repository": {
     "type": "git",
