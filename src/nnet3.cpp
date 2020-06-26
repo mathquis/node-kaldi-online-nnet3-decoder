@@ -7,18 +7,20 @@
 #include "util/kaldi-thread.h"
 #include "nnet3/nnet-utils.h"
 #include "decoder/grammar-fst.h"
+#include "util/kaldi-io.h"
 #include "util/kaldi-table.h"
 #include "lat/sausages.h"
 #include "nnet3.h"
 
 #include <napi.h>
-#include <netinet/in.h>
-#include <sys/socket.h>
 #include <sys/types.h>
-#include <poll.h>
 #include <signal.h>
-#include <arpa/inet.h>
-#include <unistd.h>
+
+// POSIX only:
+// #include <unistd.h>
+// Window only:
+#include <stdint.h>
+
 #include <math.h>
 #include <time.h>
 #include <string>
@@ -76,21 +78,27 @@ OnlineNNet3Model::OnlineNNet3Model(const Napi::CallbackInfo& info) : Napi::Objec
 	std::string words_file = config.Get("words").ToString();
 
 	// Options and configuration
-	KALDI_LOG << "Loading feature configuration...";
+	// KALDI_LOG << "Loading feature configuration...";
 
 	// Apply options
 	if (config.Has("feature_type")) {
 		feature_config.feature_type = config.Get("feature_type").ToString();
 	}
 
+	// KALDI_LOG << "A";
+
 	// Apply options
 	if (config.Has("mfcc_config")) {
 		feature_config.mfcc_config = config.Get("mfcc_config").ToString();
 	}
 
+	// KALDI_LOG << "B";
+
 	if (config.Has("ivector_extraction_config")) {
 		feature_config.ivector_extraction_config = config.Get("ivector_extraction_config").ToString();
 	}
+
+	// KALDI_LOG << "C";
 
 	if (config.Has("global_cmvn_stats")) {
 		feature_config.global_cmvn_stats_rxfilename = config.Get("global_cmvn_stats").ToString();
@@ -100,7 +108,7 @@ OnlineNNet3Model::OnlineNNet3Model(const Napi::CallbackInfo& info) : Napi::Objec
 	// feature_config.feature_type                 = "mfcc";
 	// feature_config.cmvn_config                  = "/lm/online/conf/online_cmvn.conf";
 
-	KALDI_LOG << "Loading decodable configuration...";
+	// KALDI_LOG << "Loading decodable configuration...";
 
 	if (config.Has("frame_subsampling_factor")) {
 		decodable_opts.frame_subsampling_factor = config.Get("frame_subsampling_factor").ToNumber().Uint32Value();
@@ -133,7 +141,7 @@ OnlineNNet3Model::OnlineNNet3Model(const Napi::CallbackInfo& info) : Napi::Objec
 	// nnet3::DecodableNnetSimpleLoopedInfo decodable_info(decodable_opts, &am_nnet);
 
 	// Create GrammarFST
-	KALDI_LOG << "Loading GrammarFST: " << graph_file;
+	// KALDI_LOG << "Loading GrammarFST: " << graph_file;
 
 	ReadKaldiObject(graph_file, &decode_fst);
 
@@ -147,7 +155,7 @@ OnlineNNet3Model::OnlineNNet3Model(const Napi::CallbackInfo& info) : Napi::Objec
 	KALDI_LOG << "Loaded " << word_syms->NumSymbols();
 
 	// Create feature pipeline
-	KALDI_LOG << "Loading feature pipeline info...";
+	// KALDI_LOG << "Loading feature pipeline info...";
 
 	feature_info = new OnlineNnet2FeaturePipelineInfo(feature_config);
 
@@ -229,53 +237,53 @@ OnlineNNet3GrammarDecoder::OnlineNNet3GrammarDecoder(const Napi::CallbackInfo& i
 	// Endpointing
 	if (config.Has("endpointing")) {
 
-		KALDI_LOG << "Using endpointing...";
+		// KALDI_LOG << "Using endpointing...";
 
 		const Napi::Object endpoint_config = config.Get("endpointing").ToObject();
 
 		if (endpoint_config.Has("silence_phones")) {
 			endpoint_opts.silence_phones = endpoint_config.Get("silence_phones").ToString();
 
-			KALDI_LOG << "Using silence phones: " << endpoint_opts.silence_phones;
+			// KALDI_LOG << "Using silence phones: " << endpoint_opts.silence_phones;
 		}
 
 		if (endpoint_config.Has("rule1")) {
-			KALDI_LOG << "Using endpointing rule1...";
+			// KALDI_LOG << "Using endpointing rule1...";
 
 			endpoint_opts.rule1 = Napi::ObjectWrap<EndpointRule>::Unwrap(endpoint_config.Get("rule1").ToObject())->getRule();
 		}
 		if (endpoint_config.Has("rule2")) {
-			KALDI_LOG << "Using endpointing rule2...";
+			// KALDI_LOG << "Using endpointing rule2...";
 
 			endpoint_opts.rule2 = Napi::ObjectWrap<EndpointRule>::Unwrap(endpoint_config.Get("rule2").ToObject())->getRule();
 		}
 		if (endpoint_config.Has("rule3")) {
-			KALDI_LOG << "Using endpointing rule3...";
+			// KALDI_LOG << "Using endpointing rule3...";
 
 			endpoint_opts.rule3 = Napi::ObjectWrap<EndpointRule>::Unwrap(endpoint_config.Get("rule3").ToObject())->getRule();
 		}
 		if (endpoint_config.Has("rule4")) {
-			KALDI_LOG << "Using endpointing rule4...";
+			// KALDI_LOG << "Using endpointing rule4...";
 
 			endpoint_opts.rule4 = Napi::ObjectWrap<EndpointRule>::Unwrap(endpoint_config.Get("rule4").ToObject())->getRule();
 		}
 		if (endpoint_config.Has("rule5")) {
-			KALDI_LOG << "Using endpointing rule5...";
+			// KALDI_LOG << "Using endpointing rule5...";
 
 			endpoint_opts.rule5 = Napi::ObjectWrap<EndpointRule>::Unwrap(endpoint_config.Get("rule5").ToObject())->getRule();
 		}
 	}
 
 	// // Create MBR
-	KALDI_LOG << "Loading MBR...";
+	// KALDI_LOG << "Loading MBR...";
 	MinimumBayesRiskOptions mbr_opts;
 	mbr_opts.decode_mbr = true;
 
-	KALDI_LOG << "alloc: OnlineIvectorExtractorAdaptationState";
+	// KALDI_LOG << "alloc: OnlineIvectorExtractorAdaptationState";
 
 	adaptation_state  = new OnlineIvectorExtractorAdaptationState (aModel->feature_info->ivector_extractor_info);
 
-	KALDI_LOG << "alloc: OnlineSilenceWeighting";
+	// KALDI_LOG << "alloc: OnlineSilenceWeighting";
 
 	silence_weighting = new OnlineSilenceWeighting (aModel->trans_model,
 													aModel->feature_info->silence_weighting_config,
@@ -304,25 +312,25 @@ void OnlineNNet3GrammarDecoder::StartDecoding(void) {
 
 	using namespace kaldi;
 
-	KALDI_LOG << "start_decoding..." ;
-	KALDI_LOG << "max_active  :" << decoder_opts.max_active;
-	KALDI_LOG << "min_active  :" << decoder_opts.min_active;
-	KALDI_LOG << "beam        :" << decoder_opts.beam;
-	KALDI_LOG << "lattice_beam:" << decoder_opts.lattice_beam;
+	// KALDI_LOG << "start_decoding..." ;
+	// KALDI_LOG << "max_active  :" << decoder_opts.max_active;
+	// KALDI_LOG << "min_active  :" << decoder_opts.min_active;
+	// KALDI_LOG << "beam        :" << decoder_opts.beam;
+	// KALDI_LOG << "lattice_beam:" << decoder_opts.lattice_beam;
 
 	FreeDecoder();
 
 	t = clock();
 	audio_duration = 0;
 
-	KALDI_LOG << "alloc: OnlineNnet2FeaturePipeline";
+	// KALDI_LOG << "alloc: OnlineNnet2FeaturePipeline";
 
 	feature_pipeline = new OnlineNnet2FeaturePipeline(*aModel->feature_info);
 	feature_pipeline->SetAdaptationState(*adaptation_state);
 
-	KALDI_LOG << "alloc: SingleUtteranceNnet3DecoderTpl";
+	// KALDI_LOG << "alloc: SingleUtteranceNnet3DecoderTpl";
 
-	decoder_ = new SingleUtteranceNnet3DecoderTpl<fst::GrammarFst>(
+	decoder_ = new SingleUtteranceNnet3DecoderTpl<fst::ConstGrammarFst>(
 		decoder_opts,
 		aModel->trans_model,
 		*decodable_info,
@@ -332,7 +340,7 @@ void OnlineNNet3GrammarDecoder::StartDecoding(void) {
 
 	decoder_->InitDecoding(0);
 
-	KALDI_LOG << "start_decoding...done" ;
+	// KALDI_LOG << "start_decoding...done" ;
 }
 
 Napi::Value OnlineNNet3GrammarDecoder::PushChunk(const Napi::CallbackInfo& info) {
@@ -360,11 +368,11 @@ Napi::Value OnlineNNet3GrammarDecoder::PushChunk(const Napi::CallbackInfo& info)
 
 	audio_duration += num_frames / sample_rate;
 
-	KALDI_LOG << "AcceptWaveform [sample_rate: " << sample_rate << "]";
+	// KALDI_LOG << "AcceptWaveform [sample_rate: " << sample_rate << "]";
 
 	feature_pipeline->AcceptWaveform(sample_rate, wave_part);
 
-	KALDI_LOG << "Wave accepted";
+	// KALDI_LOG << "Wave accepted";
 
 	if (silence_weighting->Active() && feature_pipeline->IvectorFeature() != NULL) {
 		silence_weighting->ComputeCurrentTraceback(decoder_->Decoder());
@@ -372,17 +380,17 @@ Napi::Value OnlineNNet3GrammarDecoder::PushChunk(const Napi::CallbackInfo& info)
 		feature_pipeline->IvectorFeature()->UpdateFrameWeights(delta_weights);
 	}
 
-	KALDI_LOG << "Advancing decoding...";
+	// KALDI_LOG << "Advancing decoding...";
 
 	decoder_->AdvanceDecoding();
 
-	KALDI_LOG << "Decoding advanced";
+	// KALDI_LOG << "Decoding advanced";
 
-	KALDI_LOG << "Detecting endpoint";
+	// KALDI_LOG << "Detecting endpoint";
 
 	bool endpoint_detected = decoder_->EndpointDetected(endpoint_opts);
 
-	KALDI_LOG << "Endpoint? " << ( endpoint_detected ? "Yes" : "No" );
+	// KALDI_LOG << "Endpoint? " << ( endpoint_detected ? "Yes" : "No" );
 
 	return Napi::Boolean::New(env, endpoint_detected);
 }
@@ -395,20 +403,20 @@ Napi::Value OnlineNNet3GrammarDecoder::GetResult(const Napi::CallbackInfo& info)
 
 	// TODO: if (!decoder_) return false;
 
-	KALDI_LOG << "Input finished";
+	// KALDI_LOG << "Input finished";
 
 	feature_pipeline->InputFinished();
 
-	KALDI_LOG << "Final advance decoding";
+	// KALDI_LOG << "Final advance decoding";
 
 	decoder_->AdvanceDecoding();
 
-	KALDI_LOG << "Finalize decoding";
+	// KALDI_LOG << "Finalize decoding";
 
 	decoder_->FinalizeDecoding();
 
-	KALDI_LOG << "Frames decoded: " << decoder_->NumFramesDecoded();
-	KALDI_LOG << "Audio duration: " << audio_duration;
+	// KALDI_LOG << "Frames decoded: " << decoder_->NumFramesDecoded();
+	// KALDI_LOG << "Audio duration: " << audio_duration;
 
 	Napi::Object response = Napi::Object::New(env);
 
@@ -423,7 +431,7 @@ Napi::Value OnlineNNet3GrammarDecoder::GetResult(const Napi::CallbackInfo& info)
 
 	if (num_frames > 0) {
 
-		KALDI_LOG << "Getting lattice";
+		// KALDI_LOG << "Getting lattice";
 
 		CompactLattice clat;
 		decoder_->GetLattice(true, &clat);
@@ -453,7 +461,7 @@ Napi::Value OnlineNNet3GrammarDecoder::GetResult(const Napi::CallbackInfo& info)
 					msg << s << ( i == wordIds.size() - 1 ? "" : " " );
 				}
 
-			KALDI_LOG << "Got wordIds " << wordIds.size();
+			// KALDI_LOG << "Got wordIds " << wordIds.size();
 
 			text = msg.str();
 
@@ -473,8 +481,8 @@ Napi::Value OnlineNNet3GrammarDecoder::GetResult(const Napi::CallbackInfo& info)
 					KALDI_LOG << "MBR Word: " << s;
 				}
 
-			KALDI_LOG << "Got words " << words.size();
-			KALDI_LOG << "Got conf " << conf.size();
+			// KALDI_LOG << "Got words " << words.size();
+			// KALDI_LOG << "Got conf " << conf.size();
 
 			KALDI_ASSERT(conf.size() == words.size() && words.size() == times.size());
 
@@ -501,9 +509,9 @@ Napi::Value OnlineNNet3GrammarDecoder::GetResult(const Napi::CallbackInfo& info)
 				// Word time
 				Napi::Array t = Napi::Array::New(env);
 
-				const int idx = 0;
-				t[idx] = RoundFloat(times[i].first * seconds_per_frame, 2);
-				t[1] = RoundFloat(times[i].second * seconds_per_frame, 2);
+				// const int idx = 0;
+				// t[idx] = RoundFloat(times[i].first * seconds_per_frame, 2);
+				// t[1] = RoundFloat(times[i].second * seconds_per_frame, 2);
 
 				item.Set("time", t);
 

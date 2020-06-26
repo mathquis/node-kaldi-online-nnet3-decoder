@@ -12,14 +12,14 @@
     "remote_path": "{version}"
   },
   "scripts": {
+    "clean": "cmake-js clean",
+    "build": "cmake-js compile Release && npm test",
+    "rebuild": "npm run clean && npm run build",
     "preinstall": "npm install node-pre-gyp",
     "install": "node-pre-gyp install --fallback-to-build",
-    "configure": "node-pre-gyp configure",
-    "build": "npm run configure && node-pre-gyp build && npm test",
-    "rebuild": "npm run configure && node-pre-gyp rebuild && npm test",
     "package": "node-pre-gyp package",
     "test": "node test.js \"test.wav\"",
-    "publish": "npm run configure && npm run rebuild && npm run package && node-pre-gyp-github publish --release"
+    "publish": "npm run rebuild && npm run package && node-pre-gyp-github publish --release"
   },
   "repository": {
     "type": "git",
@@ -42,8 +42,10 @@
     "node-pre-gyp-github": "^1.4.3"
   },
   "dependencies": {
+    "cmake-js": "^6.1.0",
     "glob": "^7.1.6",
     "node-addon-api": "^2.0.0",
+    "node-gyp": "^7.0.0",
     "node-pre-gyp": "^0.14.0",
     "wavefile": "^11.0.0"
   },

@@ -64,14 +64,15 @@ async function main() {
 		})
 
 		console.log(r5)
-
+console.log(Kaldi.OnlineNNet3Model)
 		const m = new Kaldi.OnlineNNet3Model({
-			model 						: './resources/model/final.mdl',
-			graph 						: './resources/HCLG.fst',
-			words 						: './resources/words.txt',
-			mfcc_config 				: './resources/online/conf/mfcc.conf',
-			ivector_extraction_config 	: './resources/online/conf/ivector_extractor.conf',
-			global_cmvn_stats 			: './resources/online/ivector_extractor/global_cmvn.stats',
+			model 						: 'D:\\Projects\\Assistant\\node-kaldi-online-nnet3-decoder\\resources\\model\\final.mdl',
+			graph 						: 'D:\\Projects\\Assistant\\node-kaldi-online-nnet3-decoder\\resources\\HCLG_grammar.fst',
+			words 						: 'D:\\Projects\\Assistant\\node-kaldi-online-nnet3-decoder\\resources\\words_grammar.txt',
+			feature_type 				: 'mfcc',
+			mfcc_config 				: 'D:\\Projects\\Assistant\\node-kaldi-online-nnet3-decoder\\resources\\online\\conf\\mfcc.conf',
+			ivector_extraction_config 	: 'D:\\Projects\\Assistant\\node-kaldi-online-nnet3-decoder\\resources\\online\\conf\\ivector_extractor.conf',
+			global_cmvn_stats 			: 'D:\\Projects\\Assistant\\node-kaldi-online-nnet3-decoder\\resources\\online\\ivector_extractor\\global_cmvn.stats',
 			frame_subsampling_factor 	: 3,
 			acoustic_scale 				: 1.0,
 			frames_per_chunk 			: 20,

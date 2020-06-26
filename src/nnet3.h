@@ -32,7 +32,7 @@ class OnlineNNet3Model : public Napi::ObjectWrap<OnlineNNet3Model> {
         kaldi::nnet3::NnetSimpleLoopedComputationOptions	decodable_opts;
 
         kaldi::TransitionModel								trans_model;
-        fst::GrammarFst                           			decode_fst;
+        fst::ConstGrammarFst                       			decode_fst;
 };
 
 class OnlineNNet3GrammarDecoder : public Napi::ObjectWrap<OnlineNNet3GrammarDecoder> {
@@ -65,7 +65,7 @@ class OnlineNNet3GrammarDecoder : public Napi::ObjectWrap<OnlineNNet3GrammarDeco
 		kaldi::OnlineNnet2FeaturePipeline 							*feature_pipeline;
 		kaldi::OnlineSilenceWeighting								*silence_weighting;
 
-		kaldi::SingleUtteranceNnet3DecoderTpl<fst::GrammarFst>		*decoder_;
+		kaldi::SingleUtteranceNnet3DecoderTpl<fst::ConstGrammarFst>	*decoder_;
 
 		std::vector<std::pair<int32, kaldi::BaseFloat> > 			delta_weights;
 };
