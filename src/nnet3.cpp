@@ -501,11 +501,11 @@ Napi::Value OnlineNNet3GrammarDecoder::GetResult(const Napi::CallbackInfo& info)
 				item.Set("confidence", RoundFloat(conf[i], 5));
 
 				// Word time
-				Napi::Array t = Napi::Array::New(env);
+				Napi::Array t = Napi::Array::New(env, 2);
 
-				const int idx = 0;
-				t[idx] = RoundFloat(times[i].first * seconds_per_frame, 2);
-				t[1] = RoundFloat(times[i].second * seconds_per_frame, 2);
+				uint32_t idx = 0;
+				t.Set<double>(idx++, RoundFloat(times[i].first * seconds_per_frame, 2));
+				t.Set<double>(idx++, RoundFloat(times[i].second * seconds_per_frame, 2));
 
 				item.Set("time", t);
 
