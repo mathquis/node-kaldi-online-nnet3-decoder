@@ -1,9 +1,17 @@
 cmake_minimum_required(VERSION 3.9)
 cmake_policy(SET CMP0042 NEW)
 set (CMAKE_CXX_STANDARD 11)
-set (KALDI_SRC_PATH $ENV{KALDI_PATH}/src)
-set (KALDI_OPENFST_PATH $ENV{KALDI_PATH}/tools/openfst)
-set (KALDI_OPENBLAS_PATH $ENV{KALDI_PATH}/tools/OpenBlas)
+
+# Requires:
+# - KALDI_PATH: Path to Kaldi Git checkout
+# - KALDI_LIB_PATH: Path to Kaldi compiled static libraries (LINUX: .a, WIN32: .lib)
+# - OPENFST_LIB_PATH: Path to OpenFST static library (LINUX: .a, WIN32: .lib)
+# - OPENFST_INCLUDE_PATH: Path to OpenFST includes (.h)
+# - OPENBLAS_INCLUDE_PATH: Path to OpenBLAS includes (.h)
+# - OPENBLAS_LIB_PATH: Path to OpenBLAS shared library (LINUX: .so, WIN32: .dll)
+
+# set (KALDI_OPENFST_PATH $ENV{KALDI_PATH}/tools/openfst)
+# set (KALDI_OPENBLAS_PATH $ENV{KALDI_PATH}/tools/OpenBlas)
 
 # define NPI_VERSION
 add_definitions(-DNAPI_VERSION=3)
@@ -12,22 +20,26 @@ add_definitions(-DHAVE_LAPACK_CONFIG_H)
 add_definitions(-DLAPACK_COMPLEX_STRUCTURE)
 add_definitions(-DUSE_ONLY_PRERECORDED)
 
-execute_process(COMMAND node -p "require('path').dirname(require('node-pre-gyp').find(path.resolve(path.join(__dirname,'./package.json'))))"
-		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-		OUTPUT_VARIABLE OUTPUT_DIRECTORY
-		)
+execute_process(
+	COMMAND node -p "require('path').dirname(require('node-pre-gyp').find(path.resolve(path.join(__dirname,'./package.json'))))"
+	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+	OUTPUT_VARIABLE OUTPUT_DIRECTORY
+	)
 string(REPLACE "\n" "" OUTPUT_DIRECTORY ${OUTPUT_DIRECTORY})
 string(REPLACE "\"" "" OUTPUT_DIRECTORY ${OUTPUT_DIRECTORY})
 
-message("Kaldi path: $ENV{KALDI_PATH}")
-message("Kaldi SRC path: ${KALDI_SRC_PATH}")
-message("OpenFST path: ${KALDI_OPENFST_PATH}")
-message("OpenBlas path: ${KALDI_OPENBLAS_PATH}")
-message("Output path: ${OUTPUT_DIRECTORY}")
+message("KALDI_PATH: $ENV{KALDI_PATH}")
+message("KALDI_LIB_PATH: $ENV{KALDI_LIB_PATH}")
+message("OPENFST_LIB_PATH: $ENV{OPENFST_LIB_PATH}")
+message("OPENFST_INCLUDE_PATH: $ENV{OPENFST_INCLUDE_PATH}")
+message("OPENBLAS_INCLUDE_PATH: $ENV{OPENBLAS_INCLUDE_PATH}")
+message("OPENBLAS_LIB_PATH: $ENV{OPENBLAS_LIB_PATH}")
 
 project(kaldi)
 
-file(GLOB SOURCE_FILES
+file(
+	GLOB
+	SOURCE_FILES
 	"src/nnet3.cpp"
 )
 
@@ -35,25 +47,25 @@ file(GLOB SOURCE_FILES
 
 include_directories(
 	${CMAKE_JS_INC}
-	${KALDI_SRC_PATH}
-	${KALDI_OPENFST_PATH}
-	${KALDI_OPENBLAS_PATH}
+	$ENV{KALDI_PATH}/src
+	$ENV{OPENFST_INCLUDE_PATH}
+	$ENV{OPENBLAS_INCLUDE_PATH}
 )
 
 ### LINK
 
 link_directories(
-	${KALDI_OPENFST_PATH}
-	${KALDI_OPENBLAS_PATH}
+	# $ENV{OPENFST_LIB_PATH}
+	# $ENV{OPENBLAS_LIB_PATH}
 )
 
 if (WIN32)
-	link_directories(
-		$ENV{KALDI_PATH}/kaldi-win/
-	)
+	# Specific Windows compile options
 	add_compile_options(-bigobj -wd4351 -wd4355 -wd4800 -wd4251 -wd4275 -wd4244 -wd4291 -wd4018 -wd4541 -wd4305 -wd4267 -wd4146)
 endif (WIN32)
 
+add_library(openblas			STATIC IMPORTED)
+add_library(fst					STATIC IMPORTED)
 add_library(kaldi_base			STATIC IMPORTED)
 add_library(kaldi_chain			STATIC IMPORTED)
 add_library(kaldi_cudamatrix	STATIC IMPORTED)
@@ -72,23 +84,25 @@ add_library(kaldi_transform		STATIC IMPORTED)
 add_library(kaldi_tree			STATIC IMPORTED)
 add_library(kaldi_util			STATIC IMPORTED)
 
-set_target_properties(kaldi_base		PROPERTIES IMPORTED_LOCATION	"${KALDI_SRC_PATH}/base/kaldi-base${CMAKE_STATIC_LIBRARY_SUFFIX}")
-set_target_properties(kaldi_chain		PROPERTIES IMPORTED_LOCATION	"${KALDI_SRC_PATH}/chain/kaldi-chain${CMAKE_STATIC_LIBRARY_SUFFIX}")
-set_target_properties(kaldi_cudamatrix	PROPERTIES IMPORTED_LOCATION	"${KALDI_SRC_PATH}/cudamatrix/kaldi-cudamatrix${CMAKE_STATIC_LIBRARY_SUFFIX}")
-set_target_properties(kaldi_decoder		PROPERTIES IMPORTED_LOCATION	"${KALDI_SRC_PATH}/decoder/kaldi-decoder${CMAKE_STATIC_LIBRARY_SUFFIX}")
-set_target_properties(kaldi_feat		PROPERTIES IMPORTED_LOCATION	"${KALDI_SRC_PATH}/feat/kaldi-feat${CMAKE_STATIC_LIBRARY_SUFFIX}")
-set_target_properties(kaldi_fstext		PROPERTIES IMPORTED_LOCATION	"${KALDI_SRC_PATH}/fstext/kaldi-fstext${CMAKE_STATIC_LIBRARY_SUFFIX}")
-set_target_properties(kaldi_gmm			PROPERTIES IMPORTED_LOCATION	"${KALDI_SRC_PATH}/gmm/kaldi-gmm${CMAKE_STATIC_LIBRARY_SUFFIX}")
-set_target_properties(kaldi_hmm			PROPERTIES IMPORTED_LOCATION	"${KALDI_SRC_PATH}/hmm/kaldi-hmm${CMAKE_STATIC_LIBRARY_SUFFIX}")
-set_target_properties(kaldi_ivector		PROPERTIES IMPORTED_LOCATION	"${KALDI_SRC_PATH}/ivector/kaldi-ivector${CMAKE_STATIC_LIBRARY_SUFFIX}")
-set_target_properties(kaldi_lat			PROPERTIES IMPORTED_LOCATION	"${KALDI_SRC_PATH}/lat/kaldi-lat${CMAKE_STATIC_LIBRARY_SUFFIX}")
-set_target_properties(kaldi_matrix		PROPERTIES IMPORTED_LOCATION	"${KALDI_SRC_PATH}/matrix/kaldi-matrix${CMAKE_STATIC_LIBRARY_SUFFIX}")
-set_target_properties(kaldi_nnet2		PROPERTIES IMPORTED_LOCATION	"${KALDI_SRC_PATH}/nnet2/kaldi-nnet2${CMAKE_STATIC_LIBRARY_SUFFIX}")
-set_target_properties(kaldi_nnet3		PROPERTIES IMPORTED_LOCATION	"${KALDI_SRC_PATH}/nnet3/kaldi-nnet3${CMAKE_STATIC_LIBRARY_SUFFIX}")
-set_target_properties(kaldi_online2		PROPERTIES IMPORTED_LOCATION	"${KALDI_SRC_PATH}/online2/kaldi-online2${CMAKE_STATIC_LIBRARY_SUFFIX}")
-set_target_properties(kaldi_transform	PROPERTIES IMPORTED_LOCATION	"${KALDI_SRC_PATH}/transform/kaldi-transform${CMAKE_STATIC_LIBRARY_SUFFIX}")
-set_target_properties(kaldi_tree		PROPERTIES IMPORTED_LOCATION	"${KALDI_SRC_PATH}/tree/kaldi-tree${CMAKE_STATIC_LIBRARY_SUFFIX}")
-set_target_properties(kaldi_util		PROPERTIES IMPORTED_LOCATION	"${KALDI_SRC_PATH}/util/kaldi-util${CMAKE_STATIC_LIBRARY_SUFFIX}")
+set_target_properties(openblas			PROPERTIES IMPORTED_LOCATION	"$ENV{OPENBLAS_LIB_PATH}/libopenblas${CMAKE_STATIC_LIBRARY_SUFFIX}")
+set_target_properties(fst				PROPERTIES IMPORTED_LOCATION	"$ENV{OPENFST_LIB_PATH}/fst${CMAKE_STATIC_LIBRARY_SUFFIX}")
+set_target_properties(kaldi_base		PROPERTIES IMPORTED_LOCATION	"$ENV{KALDI_LIB_PATH}/kaldi-base${CMAKE_STATIC_LIBRARY_SUFFIX}")
+set_target_properties(kaldi_chain		PROPERTIES IMPORTED_LOCATION	"$ENV{KALDI_LIB_PATH}/kaldi-chain${CMAKE_STATIC_LIBRARY_SUFFIX}")
+set_target_properties(kaldi_cudamatrix	PROPERTIES IMPORTED_LOCATION	"$ENV{KALDI_LIB_PATH}/kaldi-cudamatrix${CMAKE_STATIC_LIBRARY_SUFFIX}")
+set_target_properties(kaldi_decoder		PROPERTIES IMPORTED_LOCATION	"$ENV{KALDI_LIB_PATH}/kaldi-decoder${CMAKE_STATIC_LIBRARY_SUFFIX}")
+set_target_properties(kaldi_feat		PROPERTIES IMPORTED_LOCATION	"$ENV{KALDI_LIB_PATH}/kaldi-feat${CMAKE_STATIC_LIBRARY_SUFFIX}")
+set_target_properties(kaldi_fstext		PROPERTIES IMPORTED_LOCATION	"$ENV{KALDI_LIB_PATH}/kaldi-fstext${CMAKE_STATIC_LIBRARY_SUFFIX}")
+set_target_properties(kaldi_gmm			PROPERTIES IMPORTED_LOCATION	"$ENV{KALDI_LIB_PATH}/kaldi-gmm${CMAKE_STATIC_LIBRARY_SUFFIX}")
+set_target_properties(kaldi_hmm			PROPERTIES IMPORTED_LOCATION	"$ENV{KALDI_LIB_PATH}/kaldi-hmm${CMAKE_STATIC_LIBRARY_SUFFIX}")
+set_target_properties(kaldi_ivector		PROPERTIES IMPORTED_LOCATION	"$ENV{KALDI_LIB_PATH}/kaldi-ivector${CMAKE_STATIC_LIBRARY_SUFFIX}")
+set_target_properties(kaldi_lat			PROPERTIES IMPORTED_LOCATION	"$ENV{KALDI_LIB_PATH}/kaldi-lat${CMAKE_STATIC_LIBRARY_SUFFIX}")
+set_target_properties(kaldi_matrix		PROPERTIES IMPORTED_LOCATION	"$ENV{KALDI_LIB_PATH}/kaldi-matrix${CMAKE_STATIC_LIBRARY_SUFFIX}")
+set_target_properties(kaldi_nnet2		PROPERTIES IMPORTED_LOCATION	"$ENV{KALDI_LIB_PATH}/kaldi-nnet2${CMAKE_STATIC_LIBRARY_SUFFIX}")
+set_target_properties(kaldi_nnet3		PROPERTIES IMPORTED_LOCATION	"$ENV{KALDI_LIB_PATH}/kaldi-nnet3${CMAKE_STATIC_LIBRARY_SUFFIX}")
+set_target_properties(kaldi_online2		PROPERTIES IMPORTED_LOCATION	"$ENV{KALDI_LIB_PATH}/kaldi-online2${CMAKE_STATIC_LIBRARY_SUFFIX}")
+set_target_properties(kaldi_transform	PROPERTIES IMPORTED_LOCATION	"$ENV{KALDI_LIB_PATH}/kaldi-transform${CMAKE_STATIC_LIBRARY_SUFFIX}")
+set_target_properties(kaldi_tree		PROPERTIES IMPORTED_LOCATION	"$ENV{KALDI_LIB_PATH}/kaldi-tree${CMAKE_STATIC_LIBRARY_SUFFIX}")
+set_target_properties(kaldi_util		PROPERTIES IMPORTED_LOCATION	"$ENV{KALDI_LIB_PATH}/kaldi-util${CMAKE_STATIC_LIBRARY_SUFFIX}")
 
 
 add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES} ${CMAKE_JS_SRC})
