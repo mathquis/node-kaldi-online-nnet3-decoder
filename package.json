@@ -45,7 +45,6 @@
     "cmake-js": "^6.1.0",
     "glob": "^7.1.6",
     "node-addon-api": "^2.0.2",
-    "node-gyp": "^7.0.0",
     "node-pre-gyp": "^0.14.0",
     "wavefile": "^11.0.0"
   },
