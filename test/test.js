@@ -1,4 +1,4 @@
-const Kaldi	= require('./lib/')
+const Kaldi	= require('../lib/')
 const File	= require('fs')
 const Path	= require('path')
 const Wav	= require('wavefile').WaveFile;
@@ -64,11 +64,12 @@ async function main() {
 		})
 
 		console.log(r5)
-
+console.log(Kaldi.OnlineNNet3Model)
 		const m = new Kaldi.OnlineNNet3Model({
 			model 						: './resources/model/final.mdl',
-			graph 						: './resources/HCLG.fst',
-			words 						: './resources/words.txt',
+			graph 						: './resources/HCLG_grammar.fst',
+			words 						: './resources/words_grammar.txt',
+			feature_type 				: 'mfcc',
 			mfcc_config 				: './resources/online/conf/mfcc.conf',
 			ivector_extraction_config 	: './resources/online/conf/ivector_extractor.conf',
 			global_cmvn_stats 			: './resources/online/ivector_extractor/global_cmvn.stats',

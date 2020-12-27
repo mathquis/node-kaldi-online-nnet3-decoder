@@ -7,18 +7,20 @@
 #include "util/kaldi-thread.h"
 #include "nnet3/nnet-utils.h"
 #include "decoder/grammar-fst.h"
+#include "util/kaldi-io.h"
 #include "util/kaldi-table.h"
 #include "lat/sausages.h"
 #include "nnet3.h"
 
 #include <napi.h>
-#include <netinet/in.h>
-#include <sys/socket.h>
 #include <sys/types.h>
-#include <poll.h>
 #include <signal.h>
-#include <arpa/inet.h>
-#include <unistd.h>
+
+// POSIX only:
+// #include <unistd.h>
+// Window only:
+#include <stdint.h>
+
 #include <math.h>
 #include <time.h>
 #include <string>
@@ -271,11 +273,11 @@ OnlineNNet3GrammarDecoder::OnlineNNet3GrammarDecoder(const Napi::CallbackInfo& i
 	MinimumBayesRiskOptions mbr_opts;
 	mbr_opts.decode_mbr = true;
 
-	KALDI_LOG << "alloc: OnlineIvectorExtractorAdaptationState";
+	// KALDI_LOG << "alloc: OnlineIvectorExtractorAdaptationState";
 
 	adaptation_state  = new OnlineIvectorExtractorAdaptationState (aModel->feature_info->ivector_extractor_info);
 
-	KALDI_LOG << "alloc: OnlineSilenceWeighting";
+	// KALDI_LOG << "alloc: OnlineSilenceWeighting";
 
 	silence_weighting = new OnlineSilenceWeighting (aModel->trans_model,
 													aModel->feature_info->silence_weighting_config,
@@ -315,14 +317,14 @@ void OnlineNNet3GrammarDecoder::StartDecoding(void) {
 	t = clock();
 	audio_duration = 0;
 
-	KALDI_LOG << "alloc: OnlineNnet2FeaturePipeline";
+	// KALDI_LOG << "alloc: OnlineNnet2FeaturePipeline";
 
 	feature_pipeline = new OnlineNnet2FeaturePipeline(*aModel->feature_info);
 	feature_pipeline->SetAdaptationState(*adaptation_state);
 
-	KALDI_LOG << "alloc: SingleUtteranceNnet3DecoderTpl";
+	// KALDI_LOG << "alloc: SingleUtteranceNnet3DecoderTpl";
 
-	decoder_ = new SingleUtteranceNnet3DecoderTpl<fst::GrammarFst>(
+	decoder_ = new SingleUtteranceNnet3DecoderTpl<fst::ConstGrammarFst>(
 		decoder_opts,
 		aModel->trans_model,
 		*decodable_info,
@@ -360,11 +362,11 @@ Napi::Value OnlineNNet3GrammarDecoder::PushChunk(const Napi::CallbackInfo& info)
 
 	audio_duration += num_frames / sample_rate;
 
-	KALDI_LOG << "AcceptWaveform [sample_rate: " << sample_rate << "]";
+	// KALDI_LOG << "AcceptWaveform [sample_rate: " << sample_rate << "]";
 
 	feature_pipeline->AcceptWaveform(sample_rate, wave_part);
 
-	KALDI_LOG << "Wave accepted";
+	// KALDI_LOG << "Wave accepted";
 
 	if (silence_weighting->Active() && feature_pipeline->IvectorFeature() != NULL) {
 		silence_weighting->ComputeCurrentTraceback(decoder_->Decoder());
@@ -372,17 +374,17 @@ Napi::Value OnlineNNet3GrammarDecoder::PushChunk(const Napi::CallbackInfo& info)
 		feature_pipeline->IvectorFeature()->UpdateFrameWeights(delta_weights);
 	}
 
-	KALDI_LOG << "Advancing decoding...";
+	// KALDI_LOG << "Advancing decoding...";
 
 	decoder_->AdvanceDecoding();
 
-	KALDI_LOG << "Decoding advanced";
+	// KALDI_LOG << "Decoding advanced";
 
-	KALDI_LOG << "Detecting endpoint";
+	// KALDI_LOG << "Detecting endpoint";
 
 	bool endpoint_detected = decoder_->EndpointDetected(endpoint_opts);
 
-	KALDI_LOG << "Endpoint? " << ( endpoint_detected ? "Yes" : "No" );
+	// KALDI_LOG << "Endpoint? " << ( endpoint_detected ? "Yes" : "No" );
 
 	return Napi::Boolean::New(env, endpoint_detected);
 }
@@ -423,7 +425,7 @@ Napi::Value OnlineNNet3GrammarDecoder::GetResult(const Napi::CallbackInfo& info)
 
 	if (num_frames > 0) {
 
-		KALDI_LOG << "Getting lattice";
+		// KALDI_LOG << "Getting lattice";
 
 		CompactLattice clat;
 		decoder_->GetLattice(true, &clat);
@@ -453,7 +455,7 @@ Napi::Value OnlineNNet3GrammarDecoder::GetResult(const Napi::CallbackInfo& info)
 					msg << s << ( i == wordIds.size() - 1 ? "" : " " );
 				}
 
-			KALDI_LOG << "Got wordIds " << wordIds.size();
+			// KALDI_LOG << "Got wordIds " << wordIds.size();
 
 			text = msg.str();
 
@@ -473,12 +475,12 @@ Napi::Value OnlineNNet3GrammarDecoder::GetResult(const Napi::CallbackInfo& info)
 					KALDI_LOG << "MBR Word: " << s;
 				}
 
-			KALDI_LOG << "Got words " << words.size();
-			KALDI_LOG << "Got conf " << conf.size();
+			// KALDI_LOG << "Got words " << words.size();
+			// KALDI_LOG << "Got conf " << conf.size();
 
 			KALDI_ASSERT(conf.size() == words.size() && words.size() == times.size());
 
-			KALDI_LOG << "Text: " << text;
+			// KALDI_LOG << "Text: " << text;
 
 			// Time
 			t = clock() - t;
@@ -499,11 +501,11 @@ Napi::Value OnlineNNet3GrammarDecoder::GetResult(const Napi::CallbackInfo& info)
 				item.Set("confidence", RoundFloat(conf[i], 5));
 
 				// Word time
-				Napi::Array t = Napi::Array::New(env);
+				Napi::Array t = Napi::Array::New(env, 2);
 
-				const int idx = 0;
-				t[idx] = RoundFloat(times[i].first * seconds_per_frame, 2);
-				t[1] = RoundFloat(times[i].second * seconds_per_frame, 2);
+				uint32_t idx = 0;
+				t.Set<double>(idx++, RoundFloat(times[i].first * seconds_per_frame, 2));
+				t.Set<double>(idx++, RoundFloat(times[i].second * seconds_per_frame, 2));
 
 				item.Set("time", t);
 
