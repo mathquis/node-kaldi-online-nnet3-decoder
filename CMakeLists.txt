@@ -17,7 +17,7 @@ set (KALDI_SRC_PATH $ENV{KALDI_PATH}/src)
 message("Kaldi sources: ${KALDI_SRC_PATH}")
 
 # Kaldi includes
-set (KALDI_INCLUDE $ENV{KALDI_SRC_PATH})
+set (KALDI_INCLUDE ${KALDI_SRC_PATH})
 message("Kaldi include: ${KALDI_INCLUDE}")
 
 # OpenFST includes
