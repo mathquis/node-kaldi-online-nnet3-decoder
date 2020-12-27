@@ -16,8 +16,12 @@ message("OpenBLAS: $ENV{OPENBLAS_PATH}")
 set (KALDI_SRC_PATH $ENV{KALDI_PATH}/src)
 message("Kaldi sources: ${KALDI_SRC_PATH}")
 
+# Kaldi includes
+set (KALDI_INCLUDE $ENV{KALDI_SRC_PATH})
+message("Kaldi include: ${KALDI_INCLUDE}")
+
 # OpenFST includes
-set (OPENFST_INCLUDE $ENV{OPENFST_PATH}/src/include)
+set (OPENFST_INCLUDE $ENV{OPENFST_PATH}/include)
 message("OpenFST include: ${OPENFST_INCLUDE}")
 
 # OpenBlas includes
@@ -52,15 +56,13 @@ endif (WIN32)
 
 include_directories(
 	${CMAKE_JS_INC}
-	${KALDI_SRC_PATH}
+	${KALDI_INCLUDE}
 	${OPENFST_INCLUDE}
 	${OPENBLAS_INCLUDE}
 )
 
 ### Libraries
 
-add_library(openblas			STATIC IMPORTED)
-add_library(openfst				STATIC IMPORTED)
 add_library(kaldi_base			STATIC IMPORTED)
 add_library(kaldi_chain			STATIC IMPORTED)
 add_library(kaldi_cudamatrix	STATIC IMPORTED)
@@ -78,6 +80,8 @@ add_library(kaldi_online2		STATIC IMPORTED)
 add_library(kaldi_transform		STATIC IMPORTED)
 add_library(kaldi_tree			STATIC IMPORTED)
 add_library(kaldi_util			STATIC IMPORTED)
+add_library(openblas			STATIC IMPORTED)
+add_library(openfst				STATIC IMPORTED)
 
 if (WIN32)
 	set (KALDI_BUILD_PATH $ENV{KALDI_PATH}/kaldiwin_vs2017_OPENBLAS/${NODE_ARCH}/${CMAKE_BUILD_TYPE})
@@ -107,7 +111,7 @@ endif (WIN32)
 
 if (UNIX)
 	set_target_properties(openblas			PROPERTIES IMPORTED_LOCATION	"$ENV{OPENBLAS_PATH}/lib/libopenblas${CMAKE_STATIC_LIBRARY_SUFFIX}")
-	set_target_properties(openfst			PROPERTIES IMPORTED_LOCATION	"$ENV{OPENFST_PATH}/build64/src/lib/Release/fst${CMAKE_STATIC_LIBRARY_SUFFIX}")
+	set_target_properties(openfst			PROPERTIES IMPORTED_LOCATION	"$ENV{OPENFST_PATH}/lib/libfst${CMAKE_STATIC_LIBRARY_SUFFIX}")
 	set_target_properties(kaldi_base		PROPERTIES IMPORTED_LOCATION	"${KALDI_SRC_PATH}/base/kaldi-base${CMAKE_STATIC_LIBRARY_SUFFIX}")
 	set_target_properties(kaldi_chain		PROPERTIES IMPORTED_LOCATION	"${KALDI_SRC_PATH}/chain/kaldi-chain${CMAKE_STATIC_LIBRARY_SUFFIX}")
 	set_target_properties(kaldi_cudamatrix	PROPERTIES IMPORTED_LOCATION	"${KALDI_SRC_PATH}/cudamatrix/kaldi-cudamatrix${CMAKE_STATIC_LIBRARY_SUFFIX}")
@@ -138,8 +142,6 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 target_link_libraries(
 	${PROJECT_NAME}
 	${CMAKE_JS_LIB}
-	openblas
-	openfst
 	kaldi_online2
 	kaldi_nnet3
 	kaldi_nnet2
@@ -157,6 +159,8 @@ target_link_libraries(
 	kaldi_util
 	kaldi_matrix
 	kaldi_base
+	openblas
+	openfst
 )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "" SUFFIX ".node")
