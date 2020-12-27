@@ -18,7 +18,7 @@
     "preinstall": "npm install node-pre-gyp",
     "install": "node-pre-gyp install --fallback-to-build",
     "package": "node-pre-gyp package",
-    "test": "node test.js \"test.wav\"",
+    "test": "node test/test.js \"test/test.wav\"",
     "publish": "npm run rebuild && npm run package && node-pre-gyp-github publish --release"
   },
   "repository": {

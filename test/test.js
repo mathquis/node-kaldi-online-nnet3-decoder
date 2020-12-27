@@ -1,4 +1,4 @@
-const Kaldi	= require('./lib/')
+const Kaldi	= require('../lib/')
 const File	= require('fs')
 const Path	= require('path')
 const Wav	= require('wavefile').WaveFile;
