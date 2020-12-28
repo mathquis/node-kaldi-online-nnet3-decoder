@@ -39,17 +39,7 @@ See: https://github.com/xianyi/OpenBLAS/wiki/How-to-use-OpenBLAS-in-Microsoft-Vi
 - `make`
 -->
 
-#### Compiling Kaldi (static, shared)
+#### Compiling Kaldi (static AND shared)
 
-- CHange cmake/third_party/openfst.cmake :     GIT_TAG 30b198ac9cf382afd75899a9a90a6d9d9fef0c16 # branch winport
-
-- `cd ${KALDI_PATH}/src`
--
-
-## Dependencies
-
-`apt install apt install libatlas-dev libatlas-base-dev libfst-dev`
-
-
-
-
+./configure --static --shared --use-cuda=no --mathlib=OPENBLAS
+make -j <NUM_CPU> clean depend ; make biglib -j <NUM_CPU>
