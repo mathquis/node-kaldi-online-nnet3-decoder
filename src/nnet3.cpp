@@ -362,11 +362,11 @@ Napi::Value OnlineNNet3GrammarDecoder::PushChunk(const Napi::CallbackInfo& info)
 
 	audio_duration += num_frames / sample_rate;
 
-	// KALDI_LOG << "AcceptWaveform [sample_rate: " << sample_rate << "]";
+	KALDI_LOG << "AcceptWaveform [sample_rate: " << sample_rate << "]";
 
 	feature_pipeline->AcceptWaveform(sample_rate, wave_part);
 
-	// KALDI_LOG << "Wave accepted";
+	KALDI_LOG << "Wave accepted";
 
 	if (silence_weighting->Active() && feature_pipeline->IvectorFeature() != NULL) {
 		silence_weighting->ComputeCurrentTraceback(decoder_->Decoder());
@@ -374,17 +374,17 @@ Napi::Value OnlineNNet3GrammarDecoder::PushChunk(const Napi::CallbackInfo& info)
 		feature_pipeline->IvectorFeature()->UpdateFrameWeights(delta_weights);
 	}
 
-	// KALDI_LOG << "Advancing decoding...";
+	KALDI_LOG << "Advancing decoding...";
 
 	decoder_->AdvanceDecoding();
 
-	// KALDI_LOG << "Decoding advanced";
+	KALDI_LOG << "Decoding advanced";
 
-	// KALDI_LOG << "Detecting endpoint";
+	KALDI_LOG << "Detecting endpoint";
 
 	bool endpoint_detected = decoder_->EndpointDetected(endpoint_opts);
 
-	// KALDI_LOG << "Endpoint? " << ( endpoint_detected ? "Yes" : "No" );
+	KALDI_LOG << "Endpoint? " << ( endpoint_detected ? "Yes" : "No" );
 
 	return Napi::Boolean::New(env, endpoint_detected);
 }
@@ -480,7 +480,7 @@ Napi::Value OnlineNNet3GrammarDecoder::GetResult(const Napi::CallbackInfo& info)
 
 			KALDI_ASSERT(conf.size() == words.size() && words.size() == times.size());
 
-			// KALDI_LOG << "Text: " << text;
+			KALDI_LOG << "Text: " << text;
 
 			// Time
 			t = clock() - t;
