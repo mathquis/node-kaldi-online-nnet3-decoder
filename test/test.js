@@ -64,11 +64,12 @@ async function main() {
 		})
 
 		console.log(r5)
-console.log(Kaldi.OnlineNNet3Model)
+		console.log(Kaldi.OnlineNNet3Model)
+
 		const m = new Kaldi.OnlineNNet3Model({
 			model 						: './resources/model/final.mdl',
-			graph 						: './resources/HCLG_grammar.fst',
-			words 						: './resources/words_grammar.txt',
+			// graph 						: './resources/HCLG_grammar.fst',
+			// words 						: './resources/words_grammar.txt',
 			feature_type 				: 'mfcc',
 			mfcc_config 				: './resources/online/conf/mfcc.conf',
 			ivector_extraction_config 	: './resources/online/conf/ivector_extractor.conf',
@@ -78,6 +79,13 @@ console.log(Kaldi.OnlineNNet3Model)
 			frames_per_chunk 			: 20,
 			debug 						: true
 		})
+
+		for ( let i = 0 ; i < 5 ; i++ ) {
+			m.loadLanguageModel({
+				graph 						: './resources/HCLG_grammar.fst',
+				words 						: './resources/words_grammar.txt'
+			})
+		}
 
 		console.log(m)
 

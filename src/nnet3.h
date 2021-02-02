@@ -18,6 +18,7 @@ class OnlineNNet3Model : public Napi::ObjectWrap<OnlineNNet3Model> {
 	public:
 		static Napi::Object Init(Napi::Env env, Napi::Object exports);
 		OnlineNNet3Model(const Napi::CallbackInfo& info);
+		Napi::Value LoadLM(const Napi::CallbackInfo& info);
 		~OnlineNNet3Model();
 
 	private:

@@ -30,6 +30,9 @@
  Online2 NNet3 acoustic model
 ============================================ */
 
+using namespace kaldi;
+using namespace fst;
+
 void silent_log_handler (const kaldi::LogMessageEnvelope &envelope, const char *message) {
 		// nothing - this handler simply keeps silent
 }
@@ -41,7 +44,9 @@ Napi::Object OnlineNNet3Model::Init(Napi::Env env, Napi::Object exports) {
 	Napi::HandleScope scope(env);
 
 	// Model
-	Napi::Function func = DefineClass(env, "OnlineNNet3Model", {});
+	Napi::Function func = DefineClass(env, "OnlineNNet3Model", {
+		InstanceMethod("loadLanguageModel", &OnlineNNet3Model::LoadLM),
+	});
 
 	constructor = Napi::Persistent(func);
 	constructor.SuppressDestruct();
@@ -55,12 +60,6 @@ OnlineNNet3Model::OnlineNNet3Model(const Napi::CallbackInfo& info) : Napi::Objec
 	Napi::Env env = info.Env();
 	Napi::HandleScope scope(env);
 
-	using namespace kaldi;
-	using namespace fst;
-
-	typedef kaldi::int32 int32;
-	typedef kaldi::int64 int64;
-
 	// Configuration
 	const Napi::Object config = info[0].As<Napi::Object>();
 
@@ -70,12 +69,6 @@ OnlineNNet3Model::OnlineNNet3Model(const Napi::CallbackInfo& info) : Napi::Objec
 
 	if (!config.Has("model")) throw Napi::Error::New(env, "Missing model path");
 	std::string model_file = config.Get("model").ToString();
-
-	if (!config.Has("graph")) throw Napi::Error::New(env, "Missing graph path");
-	std::string graph_file = config.Get("graph").ToString();
-
-	if (!config.Has("words")) throw Napi::Error::New(env, "Missing words path");
-	std::string words_file = config.Get("words").ToString();
 
 	// Options and configuration
 	KALDI_LOG << "Loading feature configuration...";
@@ -97,10 +90,6 @@ OnlineNNet3Model::OnlineNNet3Model(const Napi::CallbackInfo& info) : Napi::Objec
 	if (config.Has("global_cmvn_stats")) {
 		feature_config.global_cmvn_stats_rxfilename = config.Get("global_cmvn_stats").ToString();
 	}
-
-	// One of these breaks stuff
-	// feature_config.feature_type                 = "mfcc";
-	// feature_config.cmvn_config                  = "/lm/online/conf/online_cmvn.conf";
 
 	KALDI_LOG << "Loading decodable configuration...";
 
@@ -129,25 +118,6 @@ OnlineNNet3Model::OnlineNNet3Model(const Napi::CallbackInfo& info) : Napi::Objec
 		nnet3::CollapseModel(nnet3::CollapseModelConfig(), &(am_nnet.GetNnet()));
 	}
 
-	// this object contains precomputed stuff that is used by all decodable
-	// objects.  It takes a pointer to am_nnet because if it has iVectors it has
-	// to modify the nnet to accept iVectors at intervals.
-	// nnet3::DecodableNnetSimpleLoopedInfo decodable_info(decodable_opts, &am_nnet);
-
-	// Create GrammarFST
-	KALDI_LOG << "Loading GrammarFST: " << graph_file;
-
-	ReadKaldiObject(graph_file, &decode_fst);
-
-	// Read words symbol table
-	KALDI_LOG << "Loading word symbols table: " << words_file;
-
-	if (!words_file.empty())
-		if (!(word_syms = fst::SymbolTable::ReadText(words_file)))
-			KALDI_ERR << "Could not read symbol table from file " << words_file;
-
-	KALDI_LOG << "Loaded " << word_syms->NumSymbols();
-
 	// Create feature pipeline
 	KALDI_LOG << "Loading feature pipeline info...";
 
@@ -159,14 +129,39 @@ OnlineNNet3Model::OnlineNNet3Model(const Napi::CallbackInfo& info) : Napi::Objec
 OnlineNNet3Model::~OnlineNNet3Model() {
 	delete feature_info;
 	feature_info = NULL;
-	// delete feature_config;
-	// feature_config = NULL;
-	// delete decode_fst;
-	// decode_fst = NULL;
 	delete word_syms;
 	word_syms = NULL;
-	// delete am_nnet;
-	// am_nnet = NULL;
+}
+
+Napi::Value OnlineNNet3Model::LoadLM(const Napi::CallbackInfo& info) {
+	Napi::Env env = info.Env();
+	Napi::HandleScope scope(env);
+
+	// Configuration
+	const Napi::Object config = info[0].As<Napi::Object>();
+
+	if (!config.Has("graph")) throw Napi::Error::New(env, "Missing graph path");
+	std::string graph_file = config.Get("graph").ToString();
+
+	if (!config.Has("words")) throw Napi::Error::New(env, "Missing words path");
+	std::string words_file = config.Get("words").ToString();
+
+	// Create GrammarFST
+	KALDI_LOG << "Loading GrammarFST: " << graph_file;
+
+	ReadKaldiObject(graph_file, &decode_fst);
+
+	// Read words symbol table
+	KALDI_LOG << "Loading word symbols table: " << words_file;
+
+	// delete word_syms;
+	if (!words_file.empty())
+		if (!(word_syms = fst::SymbolTable::ReadText(words_file)))
+			KALDI_ERR << "Could not read symbol table from file " << words_file;
+
+	KALDI_LOG << "Loaded " << word_syms->NumSymbols();
+
+	return Napi::Boolean::New(env, true);
 }
 
 /* ============================================
@@ -196,8 +191,6 @@ Napi::Object OnlineNNet3GrammarDecoder::Init(Napi::Env env, Napi::Object exports
 OnlineNNet3GrammarDecoder::OnlineNNet3GrammarDecoder(const Napi::CallbackInfo& info) : Napi::ObjectWrap<OnlineNNet3GrammarDecoder>(info) {
 	Napi::Env env = info.Env();
 	Napi::HandleScope scope(env);
-
-	using namespace kaldi;
 
 	decoder_           = nullptr;
 	silence_weighting  = nullptr;
@@ -304,8 +297,6 @@ Napi::Value OnlineNNet3GrammarDecoder::Start(const Napi::CallbackInfo& info) {
 
 void OnlineNNet3GrammarDecoder::StartDecoding(void) {
 
-	using namespace kaldi;
-
 	KALDI_LOG << "start_decoding..." ;
 	KALDI_LOG << "max_active  :" << decoder_opts.max_active;
 	KALDI_LOG << "min_active  :" << decoder_opts.min_active;
@@ -338,7 +329,6 @@ void OnlineNNet3GrammarDecoder::StartDecoding(void) {
 }
 
 Napi::Value OnlineNNet3GrammarDecoder::PushChunk(const Napi::CallbackInfo& info) {
-	using namespace kaldi;
 	using fst::VectorFst;
 
 	Napi::Env env = info.Env();
@@ -392,8 +382,6 @@ Napi::Value OnlineNNet3GrammarDecoder::PushChunk(const Napi::CallbackInfo& info)
 Napi::Value OnlineNNet3GrammarDecoder::GetResult(const Napi::CallbackInfo& info) {
 	Napi::Env env = info.Env();
 	Napi::HandleScope scope(env);
-
-	using namespace kaldi;
 
 	// TODO: if (!decoder_) return false;
 
@@ -572,8 +560,6 @@ Napi::Object EndpointRule::Init(Napi::Env env, Napi::Object exports) {
 EndpointRule::EndpointRule(const Napi::CallbackInfo& info) : Napi::ObjectWrap<EndpointRule>(info) {
 	Napi::Env env = info.Env();
 	Napi::HandleScope scope(env);
-
-	using namespace kaldi;
 
 	// Configuration
 	const Napi::Object config = info[0].As<Napi::Object>();
