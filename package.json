@@ -1,6 +1,6 @@
 {
   "name": "@mathquis/node-kaldi-online-nnet3-decoder",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "ASR online decoding using Kaldi NNet3 GrammarFST",
   "main": "lib/index.js",
   "gypfile": true,
