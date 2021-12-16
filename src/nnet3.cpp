@@ -481,12 +481,18 @@ Napi::Value OnlineNNet3GrammarDecoder::GetResult(const Napi::CallbackInfo& info)
 			for (size_t i = 0; i < wordIds.size(); i++) {
 				// Get the word symbol (# -> word)
 				const std::string &word = aModel->word_syms->Find(wordIds[i]);
+				const std::string &m = aModel->word_syms->Find(words[i]);
 
-				totalConfidence += conf[i];
+				double confidence = conf[i];
+				if (words[i]) {
+					confidence = 1.0;
+				}
+
+				totalConfidence += confidence;
 
 				Napi::Object item = Napi::Object::New(env);
 				item.Set("value", word);
-				item.Set("confidence", RoundFloat(conf[i], 5));
+				item.Set("confidence", RoundFloat(confidence, 5));
 
 				// Word time
 				Napi::Array t = Napi::Array::New(env, 2);
