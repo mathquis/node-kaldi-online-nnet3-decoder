@@ -46,7 +46,7 @@
   },
   "homepage": "https://github.com/mathquis/node-kaldi-online-nnet3-decoder#readme",
   "devDependencies": {
-    "@mathquis/node-pre-gyp-github": "^1.0.0",
+    "@mathquis/node-pre-gyp-github": "^1.0.2",
     "glob": "^7.1.6",
     "wavefile": "^11.0.0"
   }
