@@ -478,9 +478,9 @@ Napi::Value OnlineNNet3GrammarDecoder::GetResult(const Napi::CallbackInfo& info)
 			double totalConfidence = 0;
 			int position = 0;
 
-			for (size_t i = 0; i < words.size(); i++) {
+			for (size_t i = 0; i < wordIds.size(); i++) {
 				// Get the word symbol (# -> word)
-				const std::string &word = aModel->word_syms->Find(words[i]);
+				const std::string &word = aModel->word_syms->Find(wordIds[i]);
 
 				totalConfidence += conf[i];
 
@@ -500,13 +500,13 @@ Napi::Value OnlineNNet3GrammarDecoder::GetResult(const Napi::CallbackInfo& info)
 				item.Set("rangeStart", position);
 				item.Set("rangeEnd", position + word.size());
 
-				position += word.size() + ( i == words.size() - 1 ? 0 : 1 ); // Add space
+				position += word.size() + ( i == wordIds.size() - 1 ? 0 : 1 ); // Add space
 
 				// Add word to array
 				word_confidences[i] = item;
 			}
 
-			likelihood = RoundFloat(totalConfidence / words.size(), 5);
+			likelihood = RoundFloat(totalConfidence / wordIds.size(), 5);
 		}
 
 		KALDI_LOG << "Decoded utterance in " << seconds_taken << "s with confidence " << likelihood;

@@ -18,7 +18,8 @@
     "preinstall": "npm install @mapbox/node-pre-gyp",
     "install": "node-pre-gyp install --fallback-to-build",
     "package": "node-pre-gyp package",
-    "test": "node test/test.js \"test/test.wav\""
+    "test": "node test/test.js \"test/test.wav\"",
+    "release": "node-pre-gyp-github publish --release"
   },
   "repository": {
     "type": "git",
@@ -38,9 +39,10 @@
     "url": "https://github.com/mathquis/node-kaldi-online-nnet3-decoder/issues"
   },
   "dependencies": {
-    "@mapbox/node-pre-gyp": "^1.0.0",
+    "@mapbox/node-pre-gyp": "^1.0.7",
     "cmake-js": "^6.1.0",
-    "node-addon-api": "^2.0.2"
+    "node-addon-api": "^2.0.2",
+    "node-pre-gyp": "^0.17.0"
   },
   "homepage": "https://github.com/mathquis/node-kaldi-online-nnet3-decoder#readme",
   "devDependencies": {

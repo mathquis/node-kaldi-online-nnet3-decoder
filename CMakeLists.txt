@@ -34,8 +34,9 @@ add_definitions(-DHAVE_OPENBLAS)
 add_definitions(-DHAVE_LAPACK_CONFIG_H)
 add_definitions(-DLAPACK_COMPLEX_STRUCTURE)
 add_definitions(-DUSE_ONLY_PRERECORDED)
+add_definitions(-DFST_NO_DYNAMIC_LINKING)
 
-execute_process(COMMAND node -p "require('path').dirname(require('node-pre-gyp').find(path.resolve(path.join(__dirname,'./package.json'))))"
+execute_process(COMMAND node -p "require('path').dirname(require('@mapbox/node-pre-gyp').find(path.resolve(path.join(__dirname,'./package.json'))))"
 		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 		OUTPUT_VARIABLE OUTPUT_DIRECTORY
 		)
@@ -88,8 +89,8 @@ if (WIN32)
 	message("Kaldi build path: ${KALDI_BUILD_PATH}")
 
 	# The rest as static
-	set_target_properties(openblas			PROPERTIES IMPORTED_LOCATION	"$ENV{OPENBLAS_PATH}/bin/libopenblas${CMAKE_STATIC_LIBRARY_SUFFIX}")
-	set_target_properties(openfst			PROPERTIES IMPORTED_LOCATION	"$ENV{OPENFST_PATH}/build64/src/lib/Release/fst${CMAKE_STATIC_LIBRARY_SUFFIX}")
+	set_target_properties(openblas			PROPERTIES IMPORTED_LOCATION	"$ENV{OPENBLAS_PATH}/lib/libopenblas.dll.a")
+	set_target_properties(openfst			PROPERTIES IMPORTED_LOCATION	"$ENV{OPENFST_PATH}/lib/fst${CMAKE_STATIC_LIBRARY_SUFFIX}")
 	set_target_properties(kaldi_base		PROPERTIES IMPORTED_LOCATION	"${KALDI_BUILD_PATH}/kaldi-base${CMAKE_STATIC_LIBRARY_SUFFIX}")
 	set_target_properties(kaldi_chain		PROPERTIES IMPORTED_LOCATION	"${KALDI_BUILD_PATH}/kaldi-chain${CMAKE_STATIC_LIBRARY_SUFFIX}")
 	set_target_properties(kaldi_cudamatrix	PROPERTIES IMPORTED_LOCATION	"${KALDI_BUILD_PATH}/kaldi-cudamatrix${CMAKE_STATIC_LIBRARY_SUFFIX}")
@@ -160,8 +161,8 @@ target_link_libraries(
 	kaldi_util
 	kaldi_matrix
 	kaldi_base
-	openblas
 	openfst
+	openblas
 )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "" SUFFIX ".node")
