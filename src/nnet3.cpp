@@ -484,7 +484,12 @@ Napi::Value OnlineNNet3GrammarDecoder::GetResult(const Napi::CallbackInfo& info)
 				const std::string &m = aModel->word_syms->Find(words[i]);
 
 				double confidence = conf[i];
-				if (words[i]) {
+				if (!words[i]) {
+					confidence = 1.0;
+				}
+				if (confidence < 0.0) {
+					confidence = 0.0;
+				} else if (confidence > 1.0) {
 					confidence = 1.0;
 				}
 

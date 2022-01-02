@@ -18,7 +18,7 @@
     "preinstall": "npm install @mapbox/node-pre-gyp",
     "install": "node-pre-gyp install --fallback-to-build",
     "package": "node-pre-gyp package",
-    "test": "node test/test.js \"test/test.wav\"",
+    "test": "node test/test.js \"test/test*.wav\"",
     "release": "node-pre-gyp-github publish --release"
   },
   "repository": {

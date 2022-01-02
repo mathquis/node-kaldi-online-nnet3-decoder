@@ -90,7 +90,7 @@ async function main() {
 		console.log(m)
 
 		const d = new Kaldi.OnlineNNet3GrammarDecoder(m, {
-			beam: 12.0,
+			beam: 20.0,
 			lattice_beam: 4.0,
 			max_active: 2500,
 			min_active: 200,
@@ -121,7 +121,7 @@ async function main() {
 			const samples = wavFile.getSamples(false, Float32Array)
 
 			let start = 0
-			const step = 256
+			const step = 640
 			const num = samples.length
 
 			while ( start < num ) {
